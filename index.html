@@ -436,9 +436,16 @@
       .replaceAll("'","&#039;");
   }
 
-  // Initial
+   // Initial
   setButtonsEnabled(false);
   await loadAndRenderLeaderboard();
+  
+  setInterval(async () => {
+    await loadAndRenderLeaderboard();
+  }, 3000); // every 3 seconds
+
+
 </script>
 </body>
 </html>
+
