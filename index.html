@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Real or AI Quiz</title>
+  <style>
+    body { font-family: Arial; text-align:center; padding:20px; }
+    button { padding:10px 20px; margin:10px; font-size:16px; }
+    #leaderboard { margin-top:30px; }
+  </style>
+</head>
+<body>
+
+<h1>Real or AI? 🤖</h1>
+
+<input id="teamName" placeholder="Team name (no real names)" />
+<button id="startBtn">Start Game</button>
+
+<h2 id="timer">Time: 60</h2>
+<h2 id="score">Score: 0</h2>
+
+<div>
+  <button id="realBtn" disabled>REAL</button>
+  <button id="aiBtn" disabled>AI</button>
+</div>
+
+<h3 id="result"></h3>
+
+<button id="saveBtn" disabled>Save Score</button>
+
+<div id="leaderboard">
+  <h2>Leaderboard</h2>
+  <ul id="scoresList"></ul>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import { getDatabase, ref, push, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBJPZTrARKWsfCg06siha-0-kXi2Vt1lbA",
+    authDomain: "ctk-ai-challenge.firebaseapp.com",
+    databaseURL: "https://ctk-ai-challenge-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "ctk-ai-challenge",
+    storageBucket: "ctk-ai-challenge.firebasestorage.app",
+    messagingSenderId: "1022120470291",
+    appId: "1:1022120470291:web:6e24ccc08a09e7c7e65ce6"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getDatabase(app);
+
+  await signInAnonymously(auth);
+
+  let score = 0;
+  let timeLeft = 60;
+  let timer;
+  let teamName = "";
+
+  const timerEl = document.getElementById("timer");
+  const scoreEl = document.getElementById("score");
+  const resultEl = document.getElementById("result");
+  const saveBtn = document.getElementById("saveBtn");
+  const realBtn = document.getElementById("realBtn");
+  const aiBtn = document.getElementById("aiBtn");
+
+  document.getElementById("startBtn").onclick = () => {
+    const input = document.getElementById("teamName").value.trim();
+    if (!input) {
+      alert("Please enter a team name.");
+      return;
+    }
+
+    teamName = input;
+    score = 0;
+    timeLeft = 60;
+    scoreEl.innerText = "Score: 0";
+    resultEl.innerText = "";
+    realBtn.disabled = false;
+    aiBtn.disabled = false;
+    saveBtn.disabled = true;
+
+    timer = setInterval(() => {
+      timeLeft--;
+      timerEl.innerText = "Time: " + timeLeft;
+
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        realBtn.disabled = true;
+        aiBtn.disabled = true;
+        saveBtn.disabled = false;
+      }
+    }, 1000);
+  };
+
+  function answer(correctAnswer) {
+    if (timeLeft <= 0) return;
+
+    if (correctAnswer) {
+      score += timeLeft;
+      scoreEl.innerText = "Score: " + score;
+      resultEl.innerText = "Correct! +" + timeLeft;
+    } else {
+      resultEl.innerText = "Wrong! 0 points.";
+    }
+
+    clearInterval(timer);
+    realBtn.disabled = true;
+    aiBtn.disabled = true;
+    saveBtn.disabled = false;
+  }
+
+  realBtn.onclick = () => answer(true);   // change logic later
+  aiBtn.onclick = () => answer(false);    // change logic later
+
+  saveBtn.onclick = async () => {
+    await push(ref(db, "scores"), {
+      name: teamName,
+      score: score,
+      ts: Date.now()
+    });
+    loadScores();
+  };
+
+  async function loadScores() {
+    const snap = await get(child(ref(db), "scores"));
+    const list = document.getElementById("scoresList");
+    list.innerHTML = "";
+
+    if (!snap.exists()) return;
+
+    const rows = [];
+    snap.forEach(s => rows.push(s.val()));
+    rows.sort((a,b) => b.score - a.score);
+
+    rows.slice(0,10).forEach(r => {
+      const li = document.createElement("li");
+      li.innerText = r.name + " - " + r.score;
+      list.appendChild(li);
+    });
+  }
+
+  loadScores();
+</script>
+
+</body>
+</html>
