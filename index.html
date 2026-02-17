@@ -1,43 +1,137 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Real or AI Quiz</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Real or AI? – 10 Challenge Quiz</title>
   <style>
-    body { font-family: Arial; text-align:center; padding:20px; }
-    button { padding:10px 20px; margin:10px; font-size:16px; }
-    #leaderboard { margin-top:30px; }
+    body { font-family: system-ui, Arial, sans-serif; margin:0; background:#f6f7fb; }
+    header { padding: 16px 20px; background:#111827; color:#fff; }
+    main { max-width: 1100px; margin: 0 auto; padding: 18px; }
+    .card { background:#fff; border-radius:16px; padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.08); }
+    .row { display:flex; gap:16px; flex-wrap:wrap; }
+    .media { width:100%; border-radius:14px; overflow:hidden; background:#0b1220; display:flex; justify-content:center; align-items:center; min-height:340px; }
+    img, video { max-width:100%; height:auto; display:block; }
+    .buttons { display:flex; gap:12px; margin-top:14px; flex-wrap:wrap; align-items:center; }
+    button { border:0; padding: 12px 14px; border-radius:12px; font-size:16px; cursor:pointer; }
+    .real { background:#10b981; color:#fff; }
+    .ai { background:#6366f1; color:#fff; }
+    .next { background:#111827; color:#fff; margin-left:auto; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .muted { color:#6b7280; font-size:14px; }
+    .pill { display:inline-block; padding: 6px 10px; border-radius:999px; background:#eef2ff; color:#3730a3; font-weight:800; }
+    .big { font-size: 20px; font-weight: 900; }
+
+    .result { margin-top:14px; padding:12px; border-radius:12px; display:none; }
+    .ok { background:#ecfdf5; border: 1px solid #a7f3d0; }
+    .no { background:#fff1f2; border: 1px solid #fecdd3; }
+
+    .hud { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .timerWrap { background:#111827; border-radius:12px; padding:10px 12px; color:#fff; display:flex; gap:10px; align-items:center; }
+    .barOuter { width: 260px; height: 10px; background: rgba(255,255,255,.2); border-radius:999px; overflow:hidden; }
+    .barInner { height: 10px; background: #fff; width: 100%; transition: width .1s linear; }
+
+    input { padding:10px; border-radius:10px; border:1px solid #d1d5db; width:100%; font-size:16px; }
+    .panel { margin-top: 14px; padding: 12px; border-radius: 12px; background:#f9fafb; border:1px dashed #d1d5db; }
+    .smallbtn { padding:10px 12px; border-radius:10px; background:#e5e7eb; }
+    table { width:100%; border-collapse:collapse; margin-top:8px; }
+    th, td { text-align:left; padding:8px 6px; border-bottom:1px solid #e5e7eb; font-size:14px; }
+    th { color:#374151; }
+    .right { text-align:right; }
   </style>
 </head>
+
 <body>
+<header>
+  <div class="row" style="align-items:center; justify-content:space-between;">
+    <div>
+      <div style="font-size:18px; font-weight:900;">Real or AI? – 10 Challenge Quiz 🕵️‍♀️🤖</div>
+      <div class="muted">60 seconds per question. Correct = seconds remaining. Wrong = 0.</div>
+    </div>
+    <div class="hud">
+      <span class="pill" id="teamPill">Team: —</span>
+      <span class="big" id="scoreText">Score: 0</span>
+      <span class="pill" id="connPill">Connecting…</span>
+    </div>
+  </div>
+</header>
 
-<h1>Real or AI? 🤖</h1>
+<main>
+  <div class="card">
+    <div class="row" style="align-items:flex-start;">
+      <!-- LEFT: game -->
+      <div style="flex: 1 1 600px;">
+        <div class="row" style="align-items:center; justify-content:space-between;">
+          <div class="muted">Round: <span id="roundText"></span></div>
 
-<input id="teamName" placeholder="Team name (no real names)" />
-<button id="startBtn">Start Game</button>
+          <div class="timerWrap" title="Time left">
+            <div><b id="timeText">60</b>s</div>
+            <div class="barOuter"><div class="barInner" id="timeBar"></div></div>
+          </div>
+        </div>
 
-<h2 id="timer">Time: 60</h2>
-<h2 id="score">Score: 0</h2>
+        <div class="media" id="mediaWrap"></div>
 
-<div>
-  <button id="realBtn" disabled>REAL</button>
-  <button id="aiBtn" disabled>AI</button>
-</div>
+        <div class="muted" style="margin-top:10px;">
+          Clues: hands • eyes • teeth • background • mouth • text
+        </div>
 
-<h3 id="result"></h3>
+        <div class="buttons">
+          <button class="real" id="btnReal" disabled>REAL 👍</button>
+          <button class="ai" id="btnAI" disabled>AI 🤖</button>
+          <button class="next" id="btnNext" disabled>Next ▶</button>
+        </div>
 
-<button id="saveBtn" disabled>Save Score</button>
+        <div class="result" id="resultBox"></div>
+      </div>
 
-<div id="leaderboard">
-  <h2>Leaderboard</h2>
-  <ul id="scoresList"></ul>
-</div>
+      <!-- RIGHT: setup + leaderboard -->
+      <div style="flex: 1 1 420px;">
+        <h3 style="margin-top:0;">Shared leaderboard</h3>
+        <div class="muted">Same leaderboard on every tablet (internet required).</div>
+
+        <div class="panel">
+          <div style="font-weight:900; margin-bottom:10px;">Team setup</div>
+          <label class="muted">Team name (no real names)</label>
+          <input id="teamName" placeholder="e.g. Team Tigers" maxlength="18" />
+          <div class="row" style="margin-top:10px;">
+            <button class="smallbtn" id="startBtn">Start / Restart</button>
+            <button class="smallbtn" id="saveBtn" disabled>Save score</button>
+          </div>
+          <div class="muted" style="margin-top:10px;">
+            2–3 pupils per tablet works best.
+          </div>
+        </div>
+
+        <div class="panel">
+          <div style="font-weight:900;">Teacher controls</div>
+          <div class="muted">Reset clears the leaderboard for all tablets.</div>
+          <div class="row" style="margin-top:10px;">
+            <button class="smallbtn" id="resetBtn">Reset leaderboard</button>
+            <button class="smallbtn" id="refreshBtn">Refresh</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr><th>#</th><th>Name</th><th class="right">Score</th><th class="right">When</th></tr>
+          </thead>
+          <tbody id="lbBody">
+            <tr><td colspan="4" class="muted">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
 
 <script type="module">
+  // Firebase (CDN) + Auth + Realtime Database
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import { getDatabase, ref, push, get, child, set } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
+  // Your Firebase config
   const firebaseConfig = {
     apiKey: "AIzaSyBJPZTrARKWsfCg06siha-0-kXi2Vt1lbA",
     authDomain: "ctk-ai-challenge.firebaseapp.com",
@@ -48,102 +142,303 @@
     appId: "1:1022120470291:web:6e24ccc08a09e7c7e65ce6"
   };
 
+  const connPill = document.getElementById("connPill");
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getDatabase(app);
 
-  await signInAnonymously(auth);
+  try {
+    await signInAnonymously(auth);
+    connPill.textContent = "Connected ✅";
+    connPill.style.background = "#dcfce7";
+    connPill.style.color = "#166534";
+  } catch (e) {
+    connPill.textContent = "Offline ❌";
+    connPill.style.background = "#fee2e2";
+    connPill.style.color = "#991b1b";
+    alert("Firebase connection failed. Check Wi-Fi / Firebase settings.");
+    console.error(e);
+  }
 
-  let score = 0;
-  let timeLeft = 60;
-  let timer;
-  let teamName = "";
+  // === 10 QUESTIONS (edit filenames if needed) ===
+  const QUESTIONS = [
+    { type:"image", src:"media/q1.jpg",  answer:"AI",   explain:"Check the hands/fingers." },
+    { type:"image", src:"media/q2.jpg",  answer:"REAL", explain:"Lighting and shadows look natural." },
+    { type:"image", src:"media/q3.jpg",  answer:"AI",   explain:"Eyes/teeth can look too smooth in AI." },
+    { type:"image", src:"media/q4.jpg",  answer:"REAL", explain:"Lots of random tiny details." },
+    { type:"image", src:"media/q5.jpg",  answer:"AI",   explain:"Background can look smudged or ‘melted’." },
+    { type:"video", src:"media/q6.mp4",  answer:"AI",   explain:"Watch mouth/face edges for flicker." },
+    { type:"image", src:"media/q7.jpg",  answer:"REAL", explain:"Text/signs are readable." },
+    { type:"image", src:"media/q8.jpg",  answer:"AI",   explain:"Too-perfect patterns can be a clue." },
+    { type:"video", src:"media/q9.mp4",  answer:"REAL", explain:"Movement looks natural." },
+    { type:"image", src:"media/q10.jpg", answer:"AI",   explain:"Edges (hair/glasses) can warp in AI." }
+  ];
 
-  const timerEl = document.getElementById("timer");
-  const scoreEl = document.getElementById("score");
-  const resultEl = document.getElementById("result");
+  // UI
+  const mediaWrap = document.getElementById("mediaWrap");
+  const resultBox = document.getElementById("resultBox");
+  const btnReal = document.getElementById("btnReal");
+  const btnAI = document.getElementById("btnAI");
+  const btnNext = document.getElementById("btnNext");
+  const scoreText = document.getElementById("scoreText");
+  const roundText = document.getElementById("roundText");
+  const timeText = document.getElementById("timeText");
+  const timeBar = document.getElementById("timeBar");
+  const teamPill = document.getElementById("teamPill");
+
+  const teamNameInput = document.getElementById("teamName");
+  const startBtn = document.getElementById("startBtn");
   const saveBtn = document.getElementById("saveBtn");
-  const realBtn = document.getElementById("realBtn");
-  const aiBtn = document.getElementById("aiBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const refreshBtn = document.getElementById("refreshBtn");
+  const lbBody = document.getElementById("lbBody");
 
-  document.getElementById("startBtn").onclick = () => {
-    const input = document.getElementById("teamName").value.trim();
-    if (!input) {
-      alert("Please enter a team name.");
+  // Game state
+  const DURATION = 60;
+  let idx = 0;
+  let locked = true;
+  let score = 0;
+  let teamName = "";
+  let secondsRemaining = DURATION;
+  let timerId = null;
+
+  function stopTimer() {
+    if (timerId) clearInterval(timerId);
+    timerId = null;
+  }
+
+  function updateTimerUI() {
+    timeText.textContent = Math.ceil(secondsRemaining).toString();
+    const pct = Math.max(0, Math.min(1, secondsRemaining / DURATION));
+    timeBar.style.width = (pct * 100).toFixed(1) + "%";
+  }
+
+  function startTimer() {
+    stopTimer();
+    secondsRemaining = DURATION;
+    updateTimerUI();
+
+    const startMs = Date.now();
+    timerId = setInterval(() => {
+      const elapsed = (Date.now() - startMs) / 1000;
+      secondsRemaining = Math.max(0, DURATION - elapsed);
+      updateTimerUI();
+      if (secondsRemaining <= 0) {
+        stopTimer();
+        reveal(null, true);
+      }
+    }, 100);
+  }
+
+  function renderQuestion() {
+    resultBox.style.display = "none";
+    btnNext.disabled = true;
+    locked = false;
+
+    const q = QUESTIONS[idx];
+    roundText.textContent = `${idx + 1} / ${QUESTIONS.length}`;
+
+    mediaWrap.innerHTML = "";
+    if (q.type === "image") {
+      const img = document.createElement("img");
+      img.src = q.src;
+      img.alt = "Quiz media";
+      mediaWrap.appendChild(img);
+    } else {
+      const vid = document.createElement("video");
+      vid.src = q.src;
+      vid.controls = true;
+      vid.playsInline = true;
+      vid.preload = "metadata";
+      mediaWrap.appendChild(vid);
+    }
+
+    startTimer();
+  }
+
+  function reveal(guess, timeUp=false) {
+    if (locked) return;
+    locked = true;
+    stopTimer();
+
+    const q = QUESTIONS[idx];
+    const correct = (guess !== null) && (guess === q.answer);
+
+    let points = 0;
+    if (correct) {
+      points = Math.floor(secondsRemaining);
+      score += points;
+    }
+
+    scoreText.textContent = `Score: ${score}`;
+
+    resultBox.className = "result " + (correct ? "ok" : "no");
+    resultBox.style.display = "block";
+
+    const headline =
+      timeUp ? "Time’s up! ⌛" :
+      correct ? "Correct! ✅" : "Wrong ❌";
+
+    resultBox.innerHTML = `
+      <div style="font-weight:900; font-size:18px;">${headline}</div>
+      <div style="margin-top:6px;">
+        Correct: <b>${q.answer}</b><br/>
+        Points: <b>${points}</b><br/>
+        <span class="muted">${escapeHtml(q.explain || "")}</span>
+      </div>
+    `;
+
+    btnNext.disabled = false;
+  }
+
+  btnReal.addEventListener("click", () => reveal("REAL", false));
+  btnAI.addEventListener("click", () => reveal("AI", false));
+
+  btnNext.addEventListener("click", () => {
+    if (idx < QUESTIONS.length - 1) {
+      idx += 1;
+      renderQuestion();
+    } else {
+      // Finished
+      locked = true;
+      btnReal.disabled = true;
+      btnAI.disabled = true;
+      btnNext.disabled = true;
+      stopTimer();
+      resultBox.className = "result ok";
+      resultBox.style.display = "block";
+      resultBox.innerHTML = `<div style="font-weight:900; font-size:18px;">Finished! 🏁</div>
+        <div style="margin-top:6px;">Final score: <b>${score}</b><br/><span class="muted">Press “Save score” to add to the shared leaderboard.</span></div>`;
+      saveBtn.disabled = false;
+    }
+  });
+
+  function setButtonsEnabled(enabled) {
+    btnReal.disabled = !enabled;
+    btnAI.disabled = !enabled;
+    btnNext.disabled = true;
+  }
+
+  function setTeamFromInput() {
+    const raw = teamNameInput.value.trim();
+    if (!raw) return false;
+    teamName = raw.slice(0, 18);
+    teamPill.textContent = `Team: ${teamName}`;
+    return true;
+  }
+
+  startBtn.addEventListener("click", async () => {
+    if (!setTeamFromInput()) {
+      alert("Please type a TEAM name (no real names).");
+      teamNameInput.focus();
       return;
     }
-
-    teamName = input;
+    stopTimer();
+    idx = 0;
     score = 0;
-    timeLeft = 60;
-    scoreEl.innerText = "Score: 0";
-    resultEl.innerText = "";
-    realBtn.disabled = false;
-    aiBtn.disabled = false;
+    scoreText.textContent = `Score: ${score}`;
     saveBtn.disabled = true;
 
-    timer = setInterval(() => {
-      timeLeft--;
-      timerEl.innerText = "Time: " + timeLeft;
+    setButtonsEnabled(true);
+    renderQuestion();
+    await loadAndRenderLeaderboard();
+  });
 
-      if (timeLeft <= 0) {
-        clearInterval(timer);
-        realBtn.disabled = true;
-        aiBtn.disabled = true;
-        saveBtn.disabled = false;
-      }
-    }, 1000);
-  };
-
-  function answer(correctAnswer) {
-    if (timeLeft <= 0) return;
-
-    if (correctAnswer) {
-      score += timeLeft;
-      scoreEl.innerText = "Score: " + score;
-      resultEl.innerText = "Correct! +" + timeLeft;
-    } else {
-      resultEl.innerText = "Wrong! 0 points.";
-    }
-
-    clearInterval(timer);
-    realBtn.disabled = true;
-    aiBtn.disabled = true;
-    saveBtn.disabled = false;
+  // Leaderboard
+  function formatWhen(ts) {
+    try {
+      const d = new Date(ts);
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch { return ""; }
   }
 
-  realBtn.onclick = () => answer(true);   // change logic later
-  aiBtn.onclick = () => answer(false);    // change logic later
+  async function saveScoreToCloud(name, scoreValue) {
+    await push(ref(db, "scores"), { name, score: scoreValue, ts: Date.now() });
+  }
 
-  saveBtn.onclick = async () => {
-    await push(ref(db, "scores"), {
-      name: teamName,
-      score: score,
-      ts: Date.now()
-    });
-    loadScores();
-  };
-
-  async function loadScores() {
+  async function loadTopScores(limit=10) {
     const snap = await get(child(ref(db), "scores"));
-    const list = document.getElementById("scoresList");
-    list.innerHTML = "";
-
-    if (!snap.exists()) return;
-
     const rows = [];
-    snap.forEach(s => rows.push(s.val()));
-    rows.sort((a,b) => b.score - a.score);
-
-    rows.slice(0,10).forEach(r => {
-      const li = document.createElement("li");
-      li.innerText = r.name + " - " + r.score;
-      list.appendChild(li);
-    });
+    if (snap.exists()) snap.forEach(s => rows.push(s.val()));
+    rows.sort((a,b) => (b.score ?? 0) - (a.score ?? 0));
+    return rows.slice(0, limit);
   }
 
-  loadScores();
-</script>
+  function renderLeaderboard(rows) {
+    if (!rows.length) {
+      lbBody.innerHTML = `<tr><td colspan="4" class="muted">No scores yet.</td></tr>`;
+      return;
+    }
+    lbBody.innerHTML = rows.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${escapeHtml(r.name ?? "—")}</td>
+        <td class="right"><b>${r.score ?? 0}</b></td>
+        <td class="right">${formatWhen(r.ts)}</td>
+      </tr>
+    `).join("");
+  }
 
+  async function loadAndRenderLeaderboard() {
+    lbBody.innerHTML = `<tr><td colspan="4" class="muted">Loading…</td></tr>`;
+    const top = await loadTopScores(10);
+    renderLeaderboard(top);
+  }
+
+  saveBtn.addEventListener("click", async () => {
+    if (!teamName) {
+      if (!setTeamFromInput()) {
+        alert("Type a TEAM name first.");
+        return;
+      }
+    }
+    saveBtn.disabled = true;
+    try {
+      await saveScoreToCloud(teamName, score);
+      await loadAndRenderLeaderboard();
+      alert("Saved ✅");
+    } catch (e) {
+      console.error(e);
+      alert("Save failed (check Wi-Fi).");
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  refreshBtn.addEventListener("click", async () => {
+    await loadAndRenderLeaderboard();
+  });
+
+  // Teacher reset PIN
+  const TEACHER_PIN = "1234";
+
+  resetBtn.addEventListener("click", async () => {
+    const pin = prompt("Teacher PIN:");
+    if (pin !== TEACHER_PIN) return alert("Incorrect PIN.");
+    if (!confirm("Reset the leaderboard for ALL tablets?")) return;
+
+    try {
+      await set(ref(db, "scores"), null);
+      await loadAndRenderLeaderboard();
+      alert("Leaderboard reset ✅");
+    } catch (e) {
+      console.error(e);
+      alert("Reset failed (check Wi-Fi).");
+    }
+  });
+
+  function escapeHtml(s) {
+    return String(s)
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  // Initial
+  setButtonsEnabled(false);
+  await loadAndRenderLeaderboard();
+</script>
 </body>
 </html>
