@@ -73,7 +73,7 @@ i<!doctype html>
         <div class="media" id="mediaWrap"></div>
 
         <div class="muted" style="margin-top:10px;">
-          Clues: hands • eyes • teeth • background • mouth • text
+          Clues: limbs • flicker • realistic • background • style • text
         </div>
 
         <div class="buttons">
@@ -164,14 +164,14 @@ i<!doctype html>
   const QUESTIONS = [
     { type:"image", src:"media/q1.jpg",  answer:"AI",   explain:"Check the hands/fingers." },
     { type:"image", src:"media/q2.jpg",  answer:"REAL", explain:"Lighting and shadows look natural." },
-    { type:"image", src:"media/q3.jpg",  answer:"AI",   explain:"Eyes/teeth can look too smooth in AI." },
-    { type:"image", src:"media/q4.jpg",  answer:"REAL", explain:"Lots of random tiny details." },
-    { type:"image", src:"media/q5.jpg",  answer:"AI",   explain:"Background can look smudged or ‘melted’." },
-    { type:"video", src:"media/q6.mp4",  answer:"AI",   explain:"Watch mouth/face edges for flicker." },
-    { type:"video", src:"media/q7.mp4",  answer:"REAL", explain:"Natural movements." },
-    { type:"image", src:"media/q8.jpg",  answer:"AI",   explain:"Too-perfect patterns can be a clue." },
-    { type:"video", src:"media/q9.mp4",  answer:"REAL", explain:"Movement looks natural." },
-    { type:"image", src:"media/q10.jpg", answer:"AI",   explain:"Edges (hair/glasses) can warp in AI." }
+    { type:"video", src:"media/q3.mp4",  answer:"AI",   explain:"Unrealistic and car movement is too steady." },
+    { type:"image", src:"media/q4.jpg",  answer:"REAL", explain:"Normal movements likely to see." },
+    { type:"video", src:"media/q5.mp4",  answer:"AI",   explain:"The damage to the car and leaves." },
+    { type:"video", src:"media/q6.mp4",  answer:"REAL", explain:"Expected landscape." },
+    { type:"video", src:"media/q7.mp4",  answer:"REAL", explain:"Natural movements and consistent." },
+    { type:"video", src:"media/q8.mp4",  answer:"AI",   explain:"Too-perfect patterns can be a clue." },
+    { type:"video", src:"media/q9.mp4",  answer:"REAL", explain:"Movement looks natural and no flickering or glitches." },
+    { type:"video", src:"media/q10.jpg", answer:"REAL", explain:"Expected gestures and style of video." }
   ];
 
   // UI
@@ -410,7 +410,7 @@ i<!doctype html>
   });
 
   // Teacher reset PIN
-  const TEACHER_PIN = "1234";
+  const TEACHER_PIN = "1969";
 
   resetBtn.addEventListener("click", async () => {
     const pin = prompt("Teacher PIN:");
@@ -448,6 +448,7 @@ i<!doctype html>
 </script>
 </body>
 </html>
+
 
 
 
