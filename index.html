@@ -296,24 +296,7 @@
   const refreshBtn = document.getElementById("refreshBtn");
   const resetBtn = document.getElementById("resetBtn");
 
-  function escapeHtml(s){
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
 
-function formatWhen(ts){
-  try { return new Date(ts).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}); }
-  catch { return ""; }
-}
-
-// LIVE Top 10 by score (updates instantly on all tablets)
-function startTop10Leaderboard(){
-  const scoresRef = ref(db, "scores");
-  const top10 = query(scoresRef, orderByChild("score"), limitToLast(10));
 
   onValue(top10, (snap) => {
     const rows = [];
@@ -526,4 +509,5 @@ function startTop10Leaderboard(){
 
 </body>
 </html>
+
 
