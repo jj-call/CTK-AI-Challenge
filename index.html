@@ -296,6 +296,52 @@
   const refreshBtn = document.getElementById("refreshBtn");
   const resetBtn = document.getElementById("resetBtn");
 
+  function escapeHtml(s){
+  return String(s ?? "")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+function formatWhen(ts){
+  try { return new Date(ts).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}); }
+  catch { return ""; }
+}
+
+// LIVE Top 10 by score (updates instantly on all tablets)
+function startTop10Leaderboard(){
+  const scoresRef = ref(db, "scores");
+  const top10 = query(scoresRef, orderByChild("score"), limitToLast(10));
+
+  onValue(top10, (snap) => {
+    const rows = [];
+    snap.forEach(childSnap => rows.push(childSnap.val()));
+
+    // limitToLast returns lowest->highest; sort to show highest first
+    rows.sort((a,b) => (b.score ?? 0) - (a.score ?? 0));
+
+    if (!rows.length){
+      leaderboard.innerHTML = `<tr><td colspan="4" class="muted">No scores yet</td></tr>`;
+      return;
+    }
+
+    leaderboard.innerHTML = rows.map((r,i)=>`
+      <tr>
+        <td style="text-align:center">${i+1}</td>
+        <td>${escapeHtml(r.name)}</td>
+        <td style="text-align:right"><b>${Number(r.score ?? 0)}</b></td>
+        <td style="text-align:right">${formatWhen(r.ts)}</td>
+      </tr>
+    `).join("");
+  }, (err) => {
+    console.error("Leaderboard listener error:", err);
+    leaderboard.innerHTML =
+      `<tr><td colspan="4" class="muted">Leaderboard error: ${escapeHtml(err?.code || err?.message)}</td></tr>`;
+  });
+}
+
   /* ===== TIMER ===== */
   function startTimer(){
     clearInterval(timer);
@@ -480,3 +526,4 @@
 
 </body>
 </html>
+
