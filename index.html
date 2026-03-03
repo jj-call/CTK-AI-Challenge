@@ -36,7 +36,7 @@
   header h2{ margin:0 0 6px 0; font-weight:900; letter-spacing:.2px; }
   header div{ opacity:.92; }
 
-  main{ max-width:1100px; margin:auto; padding:16px; }
+  main{ max-width:900px; margin:auto; padding:16px; }
   .card{
     background:var(--card);
     padding:16px;
@@ -73,6 +73,7 @@
     background:#fff;
     height:10px;
     width:100%;
+    transition: width .12s linear;
   }
 
   .media{
@@ -108,6 +109,7 @@
   .real{ background:#10b981; color:#fff; }
   .ai{ background:#6366f1; color:#fff; }
   .next{ background:#111827; color:#fff; }
+  .ghost{ background:#e5e7eb; color:#111827; }
 
   input{
     padding:12px 14px;
@@ -123,41 +125,42 @@
   hr{ border:0; border-top:1px solid var(--line); margin:18px 0; }
 
   h3{ margin:10px 0; font-weight:900; }
-
   .muted{ color:var(--muted); font-size:14px; }
 
-  /* Table alignment fix */
-  .table{
-    width:100%;
-    border-collapse:collapse;
-    margin-top:10px;
-    border-radius:14px;
-    overflow:hidden;
+  /* Big final score screen */
+  .final {
+    margin-top:14px;
+    padding:14px;
+    border-radius:16px;
+    border:2px solid var(--line);
+    background:#f9fafb;
+    display:none;
   }
-  .table th, .table td{
-    border-bottom:1px solid var(--line);
-    padding:10px 10px;
-    font-size:15px;
-    vertical-align:middle;
-    white-space:nowrap;
+  .finalTop{
+    display:flex;
+    gap:12px;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
   }
-  .table thead th{
-    background:#f3f4f6;
+  .scoreBig{
+    font-size:44px;
+    font-weight:900;
+    line-height:1;
+  }
+  .stars{
+    font-size:26px;
+    letter-spacing:2px;
     font-weight:900;
   }
-  .table th:nth-child(1), .table td:nth-child(1){ text-align:center; width:42px; }
-  .table th:nth-child(2), .table td:nth-child(2){ text-align:left;  width:auto; }
-  .table th:nth-child(3), .table td:nth-child(3){ text-align:right; width:90px; }
-  .table th:nth-child(4), .table td:nth-child(4){ text-align:right; width:110px; }
-
-  .pill{
+  .badge{
     display:inline-block;
     padding:6px 10px;
     border-radius:999px;
-    background:#e5e7eb;
-    color:#111827;
+    background:#111827;
+    color:#fff;
     font-weight:900;
-    margin-top:6px;
+    font-size:14px;
   }
 </style>
 </head>
@@ -165,8 +168,8 @@
 <body>
 <header>
   <h2>Real or AI? – 10 Challenge Quiz 🤖</h2>
-  <div>60 seconds per question. Correct = seconds remaining.</div>
-  <div id="status" class="pill">Connecting...</div>
+  <div>60 seconds per question. Correct = seconds remaining. Wrong = 0.</div>
+  <div class="muted" style="color:#cbd5e1;">No leaderboard — just play, learn, and try to beat your best!</div>
 </header>
 
 <main>
@@ -175,6 +178,7 @@
   <div class="topRow">
     <div>
       <div class="muted">Round: <span id="round">—</span></div>
+      <div class="muted">Team: <span id="teamLabel">—</span> · Score: <span id="scoreLabel">0</span></div>
     </div>
 
     <div class="timer">
@@ -193,6 +197,25 @@
 
   <div id="result" class="muted" style="margin-top:10px;"></div>
 
+  <div class="final" id="finalBox">
+    <div class="finalTop">
+      <div>
+        <div class="muted">Final score</div>
+        <div class="scoreBig" id="finalScore">0</div>
+        <div class="stars" id="finalStars">☆☆☆☆☆</div>
+      </div>
+      <div>
+        <div class="badge" id="finalMessage">Nice try!</div>
+        <div class="muted" style="margin-top:8px;">Best on this tablet: <b id="bestScore">0</b></div>
+      </div>
+    </div>
+
+    <div class="buttonRow" style="margin-top:12px;">
+      <button class="next" id="playAgainBtn">Play again ▶</button>
+      <button class="ghost" id="clearBestBtn" title="Clears best score on this device only">Clear best (this device)</button>
+    </div>
+  </div>
+
   <hr>
 
   <h3>Team Setup</h3>
@@ -202,64 +225,13 @@
   </div>
   <div class="buttonRow" style="margin-top:10px;">
     <button id="startBtn">Start</button>
-    <button id="saveBtn" disabled>Save Score</button>
   </div>
-
-  <hr>
-
-  <h3>Top 10 Leaderboard</h3>
-  <div class="buttonRow" style="margin-top:8px;">
-    <button id="refreshBtn">Refresh</button>
-    <button id="resetBtn">Reset (Teacher)</button>
-  </div>
-
-  <table class="table">
-    <thead>
-      <tr><th>#</th><th>Name</th><th>Score</th><th>When</th></tr>
-    </thead>
-    <tbody id="leaderboard">
-      <tr><td colspan="4" class="muted">Loading…</td></tr>
-    </tbody>
-  </table>
 
 </div>
 </main>
 
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-  import { getDatabase, ref, push, set, onValue, query, orderByChild, limitToLast, get } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
-
-  // ✅ Paste your current API key here
-  const firebaseConfig = {
-    apiKey: "AIzaSyCAi934vzlaCr3SDq8b-3LgkCF__-v8CVo",
-    authDomain: "ctk-ai-challenge.firebaseapp.com",
-    databaseURL: "https://ctk-ai-challenge-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "ctk-ai-challenge",
-    storageBucket: "ctk-ai-challenge.firebasestorage.app",
-    messagingSenderId: "1022120470291",
-    appId: "1:1022120470291:web:6e24ccc08a09e7c7e65ce6"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getDatabase(app);
-
-  const status = document.getElementById("status");
-
-  try {
-    await signInAnonymously(auth);
-    status.textContent = "Connected ✅";
-    status.style.background = "#dcfce7";
-    status.style.color = "#166534";
-  } catch (e) {
-    status.textContent = "Offline ❌";
-    status.style.background = "#fee2e2";
-    status.style.color = "#991b1b";
-    alert("Firebase auth failed: " + (e?.code || e?.message || "unknown error"));
-  }
-
-  // ✅ QUESTIONS (UNCHANGED from your latest)
+<script>
+  // QUESTIONS (UNCHANGED from your latest) :contentReference[oaicite:1]{index=1}
   const QUESTIONS = [
     {type:"image",src:"media/q1.jpg",answer:"AI"},
     {type:"image",src:"media/q2.jpg",answer:"REAL"},
@@ -279,15 +251,23 @@
   const timeText = document.getElementById("time");
   const bar = document.getElementById("bar");
   const result = document.getElementById("result");
+
   const realBtn = document.getElementById("realBtn");
   const aiBtn = document.getElementById("aiBtn");
   const nextBtn = document.getElementById("nextBtn");
+
   const startBtn = document.getElementById("startBtn");
-  const saveBtn = document.getElementById("saveBtn");
-  const leaderboard = document.getElementById("leaderboard");
-  const refreshBtn = document.getElementById("refreshBtn");
-  const resetBtn = document.getElementById("resetBtn");
   const teamInput = document.getElementById("teamInput");
+  const teamLabel = document.getElementById("teamLabel");
+  const scoreLabel = document.getElementById("scoreLabel");
+
+  const finalBox = document.getElementById("finalBox");
+  const finalScore = document.getElementById("finalScore");
+  const finalStars = document.getElementById("finalStars");
+  const finalMessage = document.getElementById("finalMessage");
+  const bestScoreEl = document.getElementById("bestScore");
+  const playAgainBtn = document.getElementById("playAgainBtn");
+  const clearBestBtn = document.getElementById("clearBestBtn");
 
   // State
   const DURATION = 60;
@@ -296,23 +276,25 @@
   let team = "";
   let time = DURATION;
   let timer = null;
+  let locked = true;
 
-  // Helpers
-  function escapeHtml(s){
-    return String(s ?? "")
-      .replaceAll("&","&amp;")
-      .replaceAll("<","&lt;")
-      .replaceAll(">","&gt;")
-      .replaceAll('"',"&quot;")
-      .replaceAll("'","&#039;");
+  // Best score is per-device (so each tablet can have its own “personal best”)
+  const BEST_KEY = "ai_quiz_best_score_v1";
+
+  function getBest(){
+    const v = Number(localStorage.getItem(BEST_KEY) || "0");
+    return Number.isFinite(v) ? v : 0;
+  }
+  function setBest(v){
+    localStorage.setItem(BEST_KEY, String(v));
   }
 
-  function formatWhen(ts){
-    try { return new Date(ts).toLocaleTimeString([], {hour:"2-digit", minute:"2-digit"}); }
-    catch { return ""; }
+  function setButtonsEnabled(enabled){
+    realBtn.disabled = !enabled;
+    aiBtn.disabled = !enabled;
+    nextBtn.disabled = true;
   }
 
-  // Timer
   function startTimer(){
     clearInterval(timer);
     time = DURATION;
@@ -325,15 +307,15 @@
       bar.style.width = (time / DURATION * 100) + "%";
       if(time <= 0){
         clearInterval(timer);
-        reveal(null);
+        reveal(null, true);
       }
     }, 1000);
   }
 
-  // Render question
   function render(){
     result.textContent = "";
     nextBtn.disabled = true;
+    finalBox.style.display = "none";
     round.textContent = (index + 1) + " / " + QUESTIONS.length;
 
     media.innerHTML = "";
@@ -352,26 +334,55 @@
       media.appendChild(vid);
     }
 
+    locked = false;
     startTimer();
   }
 
-  // Reveal answer
-  function reveal(choice){
+  function reveal(choice, timeUp=false){
+    if(locked) return;
+    locked = true;
+
     clearInterval(timer);
     const q = QUESTIONS[index];
 
     let points = 0;
     if(choice && choice === q.answer){
-      points = time;
+      points = time;          // seconds remaining
       score += points;
-      result.textContent = "Correct! +" + points;
+      result.textContent = `Correct! +${points} ✅`;
     } else {
-      result.textContent = "Wrong!";
+      result.textContent = timeUp ? "Time’s up! ⌛" : "Wrong! ❌";
     }
+
+    scoreLabel.textContent = String(score);
     nextBtn.disabled = false;
   }
 
-  // Buttons
+  function starsForScore(s){
+    // 10 questions * max 60 = 600
+    if(s >= 480) return {stars:"★★★★★", msg:"Amazing! 🏆"};
+    if(s >= 360) return {stars:"★★★★☆", msg:"Brilliant! 🌟"};
+    if(s >= 240) return {stars:"★★★☆☆", msg:"Great job! 😄"};
+    if(s >= 120) return {stars:"★★☆☆☆", msg:"Good try! 👍"};
+    return {stars:"★☆☆☆☆", msg:"Keep practicing! 💪"};
+  }
+
+  function showFinal(){
+    finalScore.textContent = String(score);
+
+    const {stars, msg} = starsForScore(score);
+    finalStars.textContent = stars;
+    finalMessage.textContent = msg;
+
+    const prevBest = getBest();
+    const newBest = Math.max(prevBest, score);
+    if(newBest !== prevBest) setBest(newBest);
+
+    bestScoreEl.textContent = String(getBest());
+    finalBox.style.display = "block";
+  }
+
+  // Button wiring
   realBtn.onclick = () => reveal("REAL");
   aiBtn.onclick = () => reveal("AI");
 
@@ -380,10 +391,10 @@
       index++;
       render();
     } else {
-      result.textContent = "Finished! Score: " + score + " — press Save Score ✅";
-      saveBtn.disabled = false;
-      nextBtn.disabled = true;
       clearInterval(timer);
+      result.textContent = "Finished! 🏁";
+      setButtonsEnabled(false);
+      showFinal();
     }
   };
 
@@ -391,86 +402,38 @@
     team = teamInput.value.trim();
     if(!team){ alert("Enter team name"); return; }
 
+    teamLabel.textContent = team;
     index = 0;
     score = 0;
-    saveBtn.disabled = true;
+    scoreLabel.textContent = "0";
 
-    realBtn.disabled = false;
-    aiBtn.disabled = false;
-    nextBtn.disabled = true;
-
+    setButtonsEnabled(true);
     render();
   };
 
-  // Save score
-  saveBtn.onclick = async () => {
-    try{
-      await push(ref(db,"scores"),{
-        name: team,
-        score: Number(score),   // IMPORTANT: number for Top 10 query
-        ts: Date.now()
-      });
-      alert("Saved ✅");
-    } catch(e){
-      alert("Save failed: " + (e?.code || e?.message || "unknown error"));
-    }
-  };
-
-  // Leaderboard (Top 10 by score, realtime)
-  const top10Query = query(ref(db, "scores"), orderByChild("score"), limitToLast(10));
-
-  function renderLeaderboard(rows){
-    if(!rows.length){
-      leaderboard.innerHTML = "<tr><td colspan='4' class='muted'>No scores yet</td></tr>";
+  playAgainBtn.onclick = () => {
+    // keep same team name for quick repeat
+    if(!team){
+      alert("Type a team name and press Start.");
       return;
     }
-    leaderboard.innerHTML = rows.map((r,i)=>`
-      <tr>
-        <td>${i+1}</td>
-        <td>${escapeHtml(r.name)}</td>
-        <td><b>${Number(r.score ?? 0)}</b></td>
-        <td>${formatWhen(r.ts)}</td>
-      </tr>
-    `).join("");
-  }
+    index = 0;
+    score = 0;
+    scoreLabel.textContent = "0";
+    setButtonsEnabled(true);
+    render();
+  };
 
-  onValue(top10Query, (snap) => {
-    const rows = [];
-    snap.forEach(childSnap => rows.push(childSnap.val()));
-    rows.sort((a,b) => (b.score ?? 0) - (a.score ?? 0));
-    renderLeaderboard(rows);
-  }, (err) => {
-    console.error(err);
-    leaderboard.innerHTML = "<tr><td colspan='4' class='muted'>Leaderboard error</td></tr>";
-  });
-
-  // Manual refresh button (optional)
-  refreshBtn.onclick = async () => {
-    try{
-      const snap = await get(top10Query);
-      const rows = [];
-      snap.forEach(childSnap => rows.push(childSnap.val()));
-      rows.sort((a,b) => (b.score ?? 0) - (a.score ?? 0));
-      renderLeaderboard(rows);
-    }catch(e){
-      alert("Refresh failed: " + (e?.code || e?.message || "unknown error"));
+  clearBestBtn.onclick = () => {
+    if(confirm("Clear best score on THIS device only?")){
+      setBest(0);
+      bestScoreEl.textContent = "0";
     }
   };
 
-  // Teacher reset (PIN)
-  resetBtn.onclick = async () => {
-    const pin = prompt("Teacher PIN:");
-    if(pin !== "1234"){ alert("Wrong PIN"); return; }
-    if(!confirm("Reset the leaderboard for ALL tablets?")) return;
-
-    try{
-      await set(ref(db,"scores"), null);
-      alert("Leaderboard reset ✅");
-    }catch(e){
-      alert("Reset failed: " + (e?.code || e?.message || "unknown error"));
-    }
-  };
+  // Initial UI
+  setButtonsEnabled(false);
+  bestScoreEl.textContent = String(getBest());
 </script>
-
 </body>
 </html>
